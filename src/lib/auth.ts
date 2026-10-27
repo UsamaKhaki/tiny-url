@@ -1,44 +1,11 @@
 import "server-only";
-import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
+import { createHash, randomBytes } from "node:crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
-const scryptAsync = promisify(scrypt) as (
-  password: string,
-  salt: Buffer,
-  keylen: number,
-) => Promise<Buffer>;
-
 const SESSION_COOKIE = "trace_session";
 const SESSION_TTL_DAYS = 30;
-const KEY_LENGTH = 64;
-
-/* ── Passwords ──────────────────────────────────────────────────────────── */
-
-/** scrypt with a per-password salt, stored as `salt:key` in hex. */
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16);
-  const key = await scryptAsync(password.normalize("NFKC"), salt, KEY_LENGTH);
-  return `${salt.toString("hex")}:${key.toString("hex")}`;
-}
-
-export async function verifyPassword(password: string, stored: string) {
-  const [saltHex, keyHex] = stored.split(":");
-  if (!saltHex || !keyHex) return false;
-
-  const expected = Buffer.from(keyHex, "hex");
-  if (expected.length !== KEY_LENGTH) return false;
-
-  const actual = await scryptAsync(
-    password.normalize("NFKC"),
-    Buffer.from(saltHex, "hex"),
-    KEY_LENGTH,
-  );
-  return timingSafeEqual(actual, expected);
-}
-
-/* ── Sessions ───────────────────────────────────────────────────────────── */
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -77,8 +44,11 @@ export async function destroySession() {
 
 export type SessionUser = { id: string; email: string };
 
-/** The signed-in user, or null. Safe to call from any server component. */
-export async function getCurrentUser(): Promise<SessionUser | null> {
+/**
+ * The signed-in user, or null. Safe to call from any server component; wrapped
+ * in `cache` so the masthead and the page share one lookup per request.
+ */
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -97,7 +67,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   }
 
   return session.user;
-}
+});
 
 /** Drops sessions that have already lapsed. Cheap enough to run on sign-in. */
 export async function pruneExpiredSessions() {

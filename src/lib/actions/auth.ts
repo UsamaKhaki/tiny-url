@@ -6,13 +6,8 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import {
-  createSession,
-  destroySession,
-  hashPassword,
-  pruneExpiredSessions,
-  verifyPassword,
-} from "@/lib/auth";
+import { createSession, destroySession, pruneExpiredSessions } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export type AuthState = { error: string | null };

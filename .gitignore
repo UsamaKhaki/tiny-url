@@ -45,5 +45,13 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 
-# local editor/agent launch config
+# AI tooling and editor agent files (kept locally, never committed)
 .claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.cursor/
+.cursorrules
+.windsurfrules
+.github/copilot-instructions.md
+.aider*

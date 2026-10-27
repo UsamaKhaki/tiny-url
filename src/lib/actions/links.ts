@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { assertSafeUrl, normalizeUrl } from "@/lib/validation";
+import { getBaseUrl } from "@/lib/base-url";
+import { expiryFromDays } from "@/lib/expiry";
+import { InvalidDestinationError, parseDestination } from "@/lib/validation";
 
 export type LinkState = { error: string | null; ok: boolean };
 
@@ -50,14 +52,12 @@ export async function updateLink(
   const owner = await ownedSlug(parsed.data.slug);
   if (!owner.ok) return { ok: false, error: owner.error };
 
-  let target;
+  let target: URL;
   try {
-    target = assertSafeUrl(normalizeUrl(parsed.data.url));
+    target = parseDestination(parsed.data.url, new URL(await getBaseUrl()).host);
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Invalid URL.",
-    };
+    if (!(error instanceof InvalidDestinationError)) throw error;
+    return { ok: false, error: error.message };
   }
 
   const { expiry } = parsed.data;
@@ -68,10 +68,7 @@ export async function updateLink(
       ...(expiry === "keep"
         ? {}
         : {
-            expiresAt:
-              expiry === "never"
-                ? null
-                : new Date(Date.now() + Number(expiry) * 86_400_000),
+            expiresAt: expiry === "never" ? null : expiryFromDays(Number(expiry)),
           }),
     },
   });

@@ -9,21 +9,36 @@ export function normalizeUrl(raw: string): string {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+/** Thrown for user-supplied destinations we refuse; the message is safe to show. */
+export class InvalidDestinationError extends Error {}
+
 /** Rejects anything that is not a public http(s) destination. */
 export function assertSafeUrl(value: string): URL {
   let parsed: URL;
   try {
     parsed = new URL(value);
   } catch {
-    throw new Error("That doesn't look like a valid URL.");
+    throw new InvalidDestinationError("That doesn't look like a valid URL.");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Only http and https links can be shortened.");
+    throw new InvalidDestinationError("Only http and https links can be shortened.");
   }
   if (!parsed.hostname.includes(".") || PRIVATE_HOST.test(parsed.hostname)) {
-    throw new Error("Private and local addresses can't be shortened.");
+    throw new InvalidDestinationError("Private and local addresses can't be shortened.");
   }
   return parsed;
+}
+
+/**
+ * Turns raw form input into a destination we are willing to redirect to.
+ * Links back to the shortener itself are refused so codes can't chain or loop.
+ */
+export function parseDestination(raw: string, shortenerHost: string): URL {
+  const target = assertSafeUrl(normalizeUrl(raw));
+  if (target.host === shortenerHost) {
+    throw new InvalidDestinationError("That link already points at this shortener.");
+  }
+  return target;
 }
 
 export const shortenSchema = z.object({

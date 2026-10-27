@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { nanoid, RESERVED_SLUGS } from "@/lib/slug";
-import { assertSafeUrl, normalizeUrl, shortenSchema } from "@/lib/validation";
+import { nanoid } from "@/lib/slug";
+import { InvalidDestinationError, parseDestination, shortenSchema } from "@/lib/validation";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getBaseUrl } from "@/lib/base-url";
 import { getCurrentUser } from "@/lib/auth";
+import { expiryFromDays } from "@/lib/expiry";
 
 export async function POST(request: Request) {
   const limit = rateLimit(clientKey(request));
@@ -36,29 +37,18 @@ export async function POST(request: Request) {
 
   let target: URL;
   try {
-    target = assertSafeUrl(normalizeUrl(parsed.data.url));
+    target = parseDestination(parsed.data.url, new URL(baseUrl).host);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Invalid URL." },
-      { status: 400 },
-    );
-  }
-
-  if (target.host === new URL(baseUrl).host) {
-    return NextResponse.json(
-      { error: "That link already points at this shortener." },
-      { status: 400 },
-    );
+    if (!(error instanceof InvalidDestinationError)) throw error;
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   const expiresAt = parsed.data.expiresInDays
-    ? new Date(Date.now() + parsed.data.expiresInDays * 86_400_000)
+    ? expiryFromDays(parsed.data.expiresInDays)
     : null;
 
+  // Reserved aliases are already rejected by shortenSchema.
   const custom = parsed.data.slug;
-  if (custom && RESERVED_SLUGS.has(custom.toLowerCase())) {
-    return NextResponse.json({ error: "That alias is reserved." }, { status: 400 });
-  }
 
   // Custom aliases are taken or not; generated ones retry on the rare collision.
   const attempts = custom ? 1 : 5;

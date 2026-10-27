@@ -121,13 +121,24 @@ Errors return `{ "error": "..." }` with `400` (invalid input), `409` (alias take
 
 ## Testing
 
-`npm test` covers the pure business logic in `src/lib`: URL normalisation and the
-private-host filter, alias validation and reserved words (including a check that every
-top-level route folder is reserved), expiry maths, the rate limiter and password hashing.
+`npm test` runs two Vitest projects:
 
-Route handlers and Server Actions are not yet covered by automated tests. They depend on
-Prisma and on Next.js request context (`cookies()`, `headers()`), so the next step is an
-integration suite that runs them against a throwaway SQLite database.
+- **unit** (`*.test.ts`): the pure business logic in `src/lib`. URL normalisation and the
+  private-host filter, alias validation and reserved words (including a check that every
+  top-level route folder is reserved), expiry maths, the rate limiter and password hashing.
+- **integration** (`*.integration.test.ts`): the route handlers and Server Actions, called
+  directly against a real SQLite database. Shortening, redirects and click counting,
+  expired links, the stats API, editing and deleting links (including another user's),
+  sign-up, sign-in, sign-out and both rate limits.
+
+The integration project rebuilds `prisma/test.db` from the migrations on every run, so it
+never touches `dev.db` and needs no running server. `next/headers`, `next/navigation` and
+`next/cache` are replaced by small fakes in `src/test/` that hold one test's cookies and
+headers; everything else, including Prisma, is the real code. Run one project with
+`npx vitest run --project unit` or `--project integration`.
+
+Pages (the dashboard and stats screens) are server components and are not covered; that
+needs a browser-level test such as Playwright.
 
 ## Limitations
 

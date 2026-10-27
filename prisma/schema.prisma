@@ -1,0 +1,46 @@
+// Local MVP uses SQLite. To deploy (e.g. Vercel + Neon Postgres) switch
+// provider to "postgresql" and point DATABASE_URL at the managed database.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  links        Link[]
+  sessions     Session[]
+}
+
+model Session {
+  /// Only the hash of the session token is stored; the raw token lives in the cookie.
+  tokenHash String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Link {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  url       String
+  clicks    Int       @default(0)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  lastVisit DateTime?
+  /// Null for links created without an account.
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}

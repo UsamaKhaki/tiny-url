@@ -1,26 +1,878 @@
 @import "tailwindcss";
 
+/* ── Tokens ───────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #eaeef5;
+  --surface: #ffffff;
+  --ink: #0d1428;
+  --muted: #5a6483;
+  --edge: #c9d1e0;
+  --trace: #d6006e;
+  --trace-soft: #ffe3f0;
+  --signal: #0b7a5a;
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
+
+  --rail: 1px;
+  --radius: 4px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background-color: var(--paper);
+  /* Blueprint ground: a 24px plotter grid, barely there. */
+  background-image:
+    linear-gradient(to right, rgba(13, 20, 40, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(13, 20, 40, 0.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--trace);
+  outline-offset: 2px;
+}
+
+/* ── Shell ────────────────────────────────────────────────────────────── */
+.shell {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: var(--rail) solid var(--edge);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.wordmark::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--trace);
+  translate: 0 -0.1rem;
+}
+
+.masthead-links {
+  display: flex;
+  gap: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.masthead-links a {
+  text-decoration: none;
+}
+
+.masthead-links a:hover {
+  color: var(--trace);
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero {
+  padding: 4.5rem 0 2.5rem;
+  max-width: 46rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--trace);
+  margin: 0 0 1.25rem;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.75rem, 7vw, 4.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--trace);
+}
+
+.hero p {
+  margin: 1.25rem 0 0;
+  max-width: 34rem;
+  font-size: 1.0625rem;
+  color: var(--muted);
+}
+
+/* ── Console (the form card) ──────────────────────────────────────────── */
+.console {
+  background: var(--surface);
+  border: var(--rail) solid var(--edge);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 rgba(13, 20, 40, 0.04), 0 18px 40px -32px rgba(13, 20, 40, 0.55);
+}
+
+.console-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: var(--rail) solid var(--edge);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.console-body {
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.field > label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.control {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border: var(--rail) solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.control:focus-within {
+  border-color: var(--trace);
+  box-shadow: 0 0 0 3px var(--trace-soft);
+}
+
+.control > input,
+.control > select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0.75rem 0.9rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  border-radius: var(--radius);
+}
+
+.control > input:focus,
+.control > select:focus {
+  outline: none;
+}
+
+.control > input::placeholder {
+  color: #9aa3ba;
+}
+
+.control-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem 0 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.4rem;
+  border: var(--rail) solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--trace);
+  border-color: var(--trace);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.btn-quiet {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--edge);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: transparent;
+  color: var(--trace);
+  border-color: var(--trace);
+}
+
+.error {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border: var(--rail) solid var(--trace);
+  border-radius: var(--radius);
+  background: var(--trace-soft);
+  color: #8a0046;
+  font-size: 0.9rem;
+}
+
+/* ── Result: the signature plotter trace ──────────────────────────────── */
+.result {
+  margin-top: 1.5rem;
+  background: var(--surface);
+  border: var(--rail) solid var(--edge);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.trace {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-bottom: var(--rail) solid var(--edge);
+}
+
+.trace-node {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trace-node span {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+.trace-node p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-node.dest p {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--trace);
+}
+
+.trace-wire {
+  position: relative;
+  width: clamp(3rem, 12vw, 9rem);
+  height: 1.5rem;
+}
+
+.trace-wire::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  border-top: 1px dashed var(--edge);
+}
+
+.trace-wire::after {
+  content: "307";
+  position: absolute;
+  left: 50%;
+  top: -0.15rem;
+  translate: -50% 0;
+  background: var(--surface);
+  padding: 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.trace-pulse {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: -0.225rem;
+  border-radius: 999px;
+  background: var(--trace);
+  animation: run 1.9s cubic-bezier(0.5, 0, 0.2, 1) infinite;
+}
+
+@keyframes run {
+  0% { left: 0; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.25rem;
+  background: #f7f9fc;
+}
+
+.result-actions .spacer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.qr {
+  padding: 1.25rem;
+  border-top: var(--rail) solid var(--edge);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.qr img {
+  width: 132px;
+  height: 132px;
+  border: var(--rail) solid var(--edge);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.qr p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  max-width: 22rem;
+}
+
+/* ── Explainer ────────────────────────────────────────────────────────── */
+.notes {
+  margin: 4rem 0 0;
+  padding: 2rem 0 3.5rem;
+  border-top: var(--rail) solid var(--edge);
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.note h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.4rem;
+}
+
+.note p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+/* ── Stats ────────────────────────────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  gap: var(--rail);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--edge);
+  border: var(--rail) solid var(--edge);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.stat {
+  background: var(--surface);
+  padding: 1.25rem;
+}
+
+.stat dt {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat dd {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.stat dd.small {
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+}
+
+.page {
+  padding: 3.5rem 0 4rem;
+}
+
+.page h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  margin: 0 0 0.75rem;
+}
+
+.page p.lede {
+  margin: 0 0 2rem;
+  color: var(--muted);
+  max-width: 34rem;
+}
+
+.destination {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: var(--rail) solid var(--edge);
+  border-radius: var(--radius);
+}
+
+.destination span {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.destination a {
+  display: block;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  word-break: break-all;
+}
+
+.foot {
+  border-top: var(--rail) solid var(--edge);
+  padding: 1.5rem 0 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+
+.hint {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.hint a {
+  color: var(--trace);
+  text-underline-offset: 3px;
+}
+
+.stats-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+/* ── Account nav ──────────────────────────────────────────────────────── */
+.masthead-links {
+  align-items: center;
+}
+
+.masthead-links form {
+  display: flex;
+}
+
+.masthead-links .who {
+  color: var(--ink);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.linkish {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.linkish:hover {
+  color: var(--trace);
+}
+
+.masthead-links .nav-cta {
+  color: var(--trace);
+}
+
+/* ── Auth ─────────────────────────────────────────────────────────────── */
+.auth-page {
+  max-width: 27rem;
+}
+
+.auth-card {
+  margin-top: 2rem;
+}
+
+.auth-switch {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.auth-switch a {
+  color: var(--trace);
+  text-underline-offset: 3px;
+}
+
+/* ── Link manifest ────────────────────────────────────────────────────── */
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2.5rem 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.row-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.row-card {
+  /* Grid items default to min-width:auto; the nowrap URL would widen the track. */
+  min-width: 0;
+  background: var(--surface);
+  border: var(--rail) solid var(--edge);
+  border-left: 3px solid var(--trace);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.row-card.is-expired {
+  border-left-color: var(--edge);
+  background: #fbfcfe;
+}
+
+/* Long unbroken URLs must not set the intrinsic width of the card's tracks. */
+.row-card > * {
+  min-width: 0;
+}
+
+.row-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.row-id {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.row-slug {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--trace);
+  text-decoration: none;
+}
+
+.row-slug:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.is-expired .row-slug {
+  color: var(--muted);
+}
+
+.row-url {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-metrics {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: end;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-clicks {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.row-clicks strong {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.row-status {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.row-status.expired {
+  color: var(--muted);
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inline-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-danger {
+  background: var(--trace);
+  border-color: var(--trace);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.85rem;
+  font-weight: 500;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #a60056;
+  border-color: #a60056;
+}
+
+.row-edit {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.9rem;
+  border-top: var(--rail) dashed var(--edge);
+}
+
+.empty {
+  margin-top: 2.5rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: var(--surface);
+  border: var(--rail) dashed var(--edge);
+  border-radius: var(--radius);
+}
+
+.empty h2 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.4rem;
+}
+
+.empty p {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .masthead {
+    padding: 1.1rem 0;
+  }
+
+  .masthead-links {
+    gap: 1rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+  }
+
+  /* The dashboard already names the account, so drop it from the nav. */
+  .masthead-links .who {
+    display: none;
+  }
+
+  .shell {
+    padding: 0 1rem;
+  }
+
+  .hero {
+    padding: 3rem 0 2rem;
+  }
+
+  .console-body,
+  .trace,
+  .result-actions,
+  .qr {
+    padding-inline: 1rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .row,
+  .notes,
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trace {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .trace-wire {
+    width: 100%;
+    height: 1.25rem;
+  }
+
+  .qr {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .row-main {
+    flex-direction: column;
+    /* Stacked: children should fill the card, not size to the URL's length. */
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .row-metrics {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .trace-pulse {
+    left: 50%;
+    opacity: 1;
+  }
 }

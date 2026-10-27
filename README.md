@@ -1,64 +1,111 @@
-# Trace — URL shortener (MVP)
+# Trace
 
-Paste a long link, get a short one that redirects instantly and counts every visit.
+A URL shortener built with Next.js (App Router), Prisma and SQLite. Paste a long link and
+get a seven-character code that redirects with a `307` and counts every visit. Signed-in
+users get a dashboard where they can repoint, re-expire or delete their links.
 
-## Run it
+## Features
+
+- **Short codes**: 7 characters from an alphabet with no `0/O` or `1/l/I`, so codes survive
+  being read aloud or printed. Collisions are retried up to five times.
+- **Custom aliases**: 3 to 32 letters, digits, `-` or `_`. App routes such as `dashboard`
+  and `api` are reserved, and taken aliases return `409`.
+- **Expiry**: optional 1, 7, 30 or 365 days. Expired codes stop redirecting and show an
+  explanation page instead.
+- **Redirects**: `307` with `Cache-Control: no-store`, so editing or retiring a link takes
+  effect immediately.
+- **Click stats**: each redirect increments a counter and records the last visit. Stats are
+  at `/stats/<code>` and `GET /api/links/<code>`.
+- **Accounts**: email and password sign-up, cookie sessions, and a dashboard of your own
+  links. Links made while signed out still work but cannot be edited later.
+- **QR codes**: generated in the browser for any new short link.
+- **Guardrails**: http(s) only, no private or loopback hosts, no links back to the
+  shortener itself, and per-IP rate limits (20/min for shortening, 10/min for auth).
+
+## Stack
+
+| Concern | Choice |
+| --- | --- |
+| Framework | Next.js 16 (App Router, Server Actions, Route Handlers), React 19 |
+| Language | TypeScript (strict) |
+| Data | Prisma 6 with SQLite locally |
+| Validation | Zod 4 |
+| IDs | nanoid with a custom alphabet |
+| Styling | Hand-written CSS in `globals.css` (Tailwind 4 is imported, but only its base reset is used) |
+| Tests | Vitest |
+
+## Architecture
+
+```
+src/
+  app/
+    [slug]/route.ts           Redirect handler and click counting
+    api/shorten/route.ts      POST: create a short link (JSON API used by the form)
+    api/links/[slug]/route.ts GET: link stats as JSON
+    stats/[slug]/page.tsx     Public stats page
+    dashboard/page.tsx        Signed-in user's links
+    login/, signup/           Account forms
+  components/                 Client components (shorten form, dashboard row, auth form)
+  lib/
+    validation.ts             URL and alias rules (parseDestination, shortenSchema)
+    slug.ts                   Code generator, reserved aliases, alias pattern
+    expiry.ts                 Expiry checks and date maths
+    rate-limit.ts             In-memory fixed-window limiter and client IP parsing
+    password.ts               scrypt hashing and verification
+    auth.ts                   Sessions and getCurrentUser()
+    actions/                  Server Actions for auth and link edit/delete
+prisma/
+  schema.prisma               User, Session and Link models
+  migrations/
+```
+
+Business rules live in `src/lib` as plain functions so they can be tested without a
+request or a database. Route handlers and Server Actions do transport work: parse input,
+check ownership, call Prisma, shape the response.
+
+### Auth
+
+There is no third-party auth provider. Passwords are hashed with Node's `scrypt` and a
+16-byte random salt, and compared with `timingSafeEqual`. A session is a 32-byte random
+token in an `httpOnly`, `sameSite=lax` cookie; only its SHA-256 hash is stored, so a
+database leak does not expose live sessions. Sign-in runs the hash even when the email
+does not exist, so response time does not reveal which accounts exist.
+
+Every edit and delete re-checks on the server that the signed-in user owns the link.
+
+## Getting started
+
+Requires Node 22 and npm.
 
 ```bash
 npm install
-npx prisma migrate dev
+cp .env.example .env
+npm run db:migrate      # creates prisma/dev.db and applies migrations
 npm run dev
 ```
 
 Open http://localhost:3000.
 
-## What's in the MVP
+### Environment variables
 
-- **Accounts** — email + password sign-up, session cookies, and a dashboard of your own links.
-- **Manage** — edit where an already-printed code points, change or clear its expiry, delete it.
-- **Shorten** — 7-character codes from an alphabet with no `0/O` or `1/l`, so codes stay readable when spoken or printed.
-- **Custom aliases** — claim `/spring-sale`; reserved app paths and taken aliases are rejected with a clear message.
-- **Expiry** — optional 1 day / 7 / 30 / 365; expired codes stop redirecting and explain why.
-- **Redirect** — `307` with `Cache-Control: no-store`, so retiring a link takes effect immediately.
-- **Click stats** — every hop increments the count and stamps the last visit; see `/stats/<code>`.
-- **QR code** — generated in the browser for any short link.
-- **Guardrails** — http(s) only, no private/loopback hosts, no self-referencing links, 20 req/min per IP for shortening and 10/min for auth.
-
-Links made while signed out still work — they just aren't attached to an account, so
-nobody can edit them later.
-
-## How auth works
-
-Email and password, no third party. Passwords are hashed with `scrypt` (Node's built-in,
-16-byte random salt per password, compared with `timingSafeEqual`). Sessions are opaque
-32-byte random tokens in an `httpOnly`, `sameSite=lax` cookie; only the SHA-256 hash of a
-token is stored, so a database leak doesn't hand over live sessions. Sign-in cost is the
-same whether or not the email exists, so the form can't be used to enumerate accounts.
-
-Ownership is checked server-side on every mutation in `src/lib/actions/links.ts` — a
-signed-in user replaying another account's Server Action request gets
-"That link isn't in your account." and nothing changes.
-
-If you'd rather not own auth code, this is the piece to swap: Clerk (on the Vercel
-Marketplace) or Auth.js drop in behind `getCurrentUser()` without touching the rest.
-
-## Layout
-
-| Path | Purpose |
+| Name | Purpose |
 | --- | --- |
-| `src/app/page.tsx` | Landing page and shortener |
-| `src/app/dashboard/page.tsx` | Your links — counts, edit, delete |
-| `src/app/login/page.tsx`, `src/app/signup/page.tsx` | Account forms |
-| `src/lib/auth.ts` | Password hashing, sessions, `getCurrentUser()` |
-| `src/lib/actions/auth.ts` | Sign up / sign in / sign out actions |
-| `src/lib/actions/links.ts` | Edit and delete, with the ownership guard |
-| `src/app/[slug]/route.ts` | Redirect handler + click counting |
-| `src/app/api/shorten/route.ts` | Create a short link |
-| `src/app/api/links/[slug]/route.ts` | Read link stats as JSON |
-| `src/app/stats/[slug]/page.tsx` | Stats page |
-| `src/lib/validation.ts` | URL and alias rules |
-| `src/lib/rate-limit.ts` | In-memory per-IP limiter |
-| `prisma/schema.prisma` | `User`, `Session`, `Link` models |
+| `DATABASE_URL` | Prisma connection string. `file:./dev.db` for local SQLite. |
+| `NEXT_PUBLIC_APP_URL` | Public origin used to build short links. Falls back to `VERCEL_PROJECT_PRODUCTION_URL`, then the request host. |
+
+## Scripts
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` / `npm start` | Production build and server |
+| `npm run lint` | ESLint (Next.js core-web-vitals and TypeScript rules) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Run the Vitest suite once (`npm run test:watch` to watch) |
+| `npm run db:migrate` | `prisma migrate dev` |
+
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every push to
+`main` and on pull requests.
 
 ## API
 
@@ -68,23 +115,32 @@ curl -X POST localhost:3000/api/shorten \
   -d '{"url":"https://example.com/long","slug":"spring-sale","expiresInDays":30}'
 ```
 
-## Before deploying
+Returns `201` with `slug`, `shortUrl`, `url`, `clicks`, `createdAt` and `expiresAt`.
+Errors return `{ "error": "..." }` with `400` (invalid input), `409` (alias taken) or
+`429` (rate limited, with `Retry-After`).
 
-The MVP stores links in SQLite (`prisma/dev.db`), which does not survive a serverless
-deploy. To ship it:
+## Testing
 
-1. Provision a Postgres database (Neon on the Vercel Marketplace works well).
-2. Set `provider = "postgresql"` in `prisma/schema.prisma` and point `DATABASE_URL` at it.
-3. Run `npx prisma migrate deploy`.
-4. Replace `src/lib/rate-limit.ts` with a shared store (e.g. Upstash Redis) — the
-   in-memory limiter only counts requests for one instance.
-5. Set `NEXT_PUBLIC_APP_URL` to your domain so short links render with the right host.
+`npm test` covers the pure business logic in `src/lib`: URL normalisation and the
+private-host filter, alias validation and reserved words (including a check that every
+top-level route folder is reserved), expiry maths, the rate limiter and password hashing.
 
-## Not in this MVP
+Route handlers and Server Actions are not yet covered by automated tests. They depend on
+Prisma and on Next.js request context (`cookies()`, `headers()`), so the next step is an
+integration suite that runs them against a throwaway SQLite database.
 
-Password reset and email verification, OAuth sign-in, teams or shared workspaces,
-per-click referrer/geo breakdowns, password-protected links, and bulk import.
+## Limitations
 
-Note that `/stats/<code>` is readable by anyone who has the code, which also means the
-destination is. Owner-only stats would be a small change to
-`src/app/stats/[slug]/page.tsx` if you want it.
+- **SQLite only.** `prisma/dev.db` does not survive a serverless deploy. To deploy, switch
+  the datasource to `postgresql`, point `DATABASE_URL` at a managed database and run
+  `npx prisma migrate deploy`. The existing migrations are SQLite-specific, so they would
+  need to be regenerated for Postgres.
+- **Single-instance rate limiting.** The limiter is in memory, so it resets on restart and
+  does not share counts across instances. It also trusts `x-forwarded-for`, which is only
+  safe behind a proxy that overwrites that header.
+- **Stats are public.** Anyone with a code can open its stats page and see the destination
+  and click count. Making stats owner-only is a small change in `src/app/stats/[slug]`.
+- **Click counts are approximate analytics.** There is no bot filtering, and a failed
+  counter update never blocks the redirect.
+- **Not built yet:** password reset, email verification, OAuth, per-click referrer or geo
+  data, and bulk import.

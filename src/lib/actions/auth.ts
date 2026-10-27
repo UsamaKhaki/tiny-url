@@ -13,7 +13,7 @@ import {
   pruneExpiredSessions,
   verifyPassword,
 } from "@/lib/auth";
-import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export type AuthState = { error: string | null };
 
@@ -32,11 +32,7 @@ const credentials = z.object({
 });
 
 async function throttle(scope: string) {
-  const list = await headers();
-  const ip =
-    list.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    list.get("x-real-ip") ??
-    "local";
+  const ip = clientIp(await headers());
   return rateLimit(`${scope}:${ip}`, { max: 10 }).ok;
 }
 

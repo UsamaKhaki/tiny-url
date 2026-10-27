@@ -3,13 +3,13 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "@/lib/slug";
 import { InvalidDestinationError, parseDestination, shortenSchema } from "@/lib/validation";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { getBaseUrl } from "@/lib/base-url";
 import { getCurrentUser } from "@/lib/auth";
 import { expiryFromDays } from "@/lib/expiry";
 
 export async function POST(request: Request) {
-  const limit = rateLimit(clientKey(request));
+  const limit = rateLimit(`shorten:${clientIp(request.headers)}`);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many links from this address. Try again shortly." },

@@ -28,6 +28,7 @@ export function LinkRow({ link, baseUrl }: { link: DashboardLink; baseUrl: strin
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   const [saveState, saveAction, saving] = useActionState(updateLink, INITIAL);
   const [removeState, removeAction, removing] = useActionState(deleteLink, INITIAL);
@@ -52,8 +53,13 @@ export function LinkRow({ link, baseUrl }: { link: DashboardLink; baseUrl: strin
       : "Live";
 
   async function copy() {
-    await navigator.clipboard.writeText(`${baseUrl}/${link.slug}`);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(`${baseUrl}/${link.slug}`);
+      setCopyError(null);
+      setCopied(true);
+    } catch {
+      setCopyError("Your browser blocked the clipboard. Copy the link manually.");
+    }
   }
 
   return (
@@ -116,6 +122,12 @@ export function LinkRow({ link, baseUrl }: { link: DashboardLink; baseUrl: strin
           </button>
         )}
       </div>
+
+      {copyError && (
+        <p className="error" role="alert">
+          {copyError}
+        </p>
+      )}
 
       {removeState.error && (
         <p className="error" role="alert">

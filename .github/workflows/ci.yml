@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: file:./ci.db
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:6201
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4

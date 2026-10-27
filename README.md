@@ -84,7 +84,7 @@ npm run db:migrate      # creates prisma/dev.db and applies migrations
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:6201.
 
 ### Environment variables
 
@@ -110,7 +110,7 @@ CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every p
 ## API
 
 ```bash
-curl -X POST localhost:3000/api/shorten \
+curl -X POST localhost:6201/api/shorten \
   -H 'content-type: application/json' \
   -d '{"url":"https://example.com/long","slug":"spring-sale","expiresInDays":30}'
 ```

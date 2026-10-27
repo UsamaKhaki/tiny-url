@@ -9,7 +9,7 @@ export async function getBaseUrl() {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
   const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
+  const host = h.get("host") ?? "localhost:6201";
   const proto = host.startsWith("localhost") ? "http" : "https";
   return `${proto}://${host}`;
 }

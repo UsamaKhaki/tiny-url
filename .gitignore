@@ -45,7 +45,7 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 
-# AI tooling and editor agent files (kept locally, never committed)
+# local editor and tool config (kept on disk, never committed)
 .claude/
 CLAUDE.md
 CLAUDE.local.md
